@@ -15,13 +15,13 @@ public class Trajectories {
 
         interplanetary_data tmp;
 
-        for(int i = 0 ; i < 80; i++)
+        for(int i = 0 ; i < 40; i++)
         {
             depart.year = departYear;
-            depart.month = (i/2) % 12;
-            depart.day = i%2 * 15;
+            depart.month = (i) % 12+1;
+            depart.day = 15;
 
-            if((i/2) % 12 + 8 <= 12) {
+            if(i % 12 + 9 <= 12) {
                 arrival.year = departYear;
                 arrival.month = depart.month + 8;
             }
@@ -52,12 +52,77 @@ public class Trajectories {
             success = true;
         }
 
-        if(success){
+        if(success) {
             System.out.println(valorisationScalar);
+
+            double DateDepartJulian = J0(departYear, 1, 15, depart.hour, depart.minute, depart.second) + selectedIteration * 30;
+            //double DateArrivalJulian = J0(arrival.year, arrival.month, arrival.day, arrival.hour, arrival.minute, arrival.second);
+
+            valorisationScalar = Double.MAX_VALUE;
+
+            int kk = 0;
+            int hh = 0;
+
+            for (int k = -25; k < 25; k++) // Julian date are required
+            {
+                for(int h = -25; h < 25; h++)
+                {
+                    int[] fff = fromJulian(DateDepartJulian + k);
+                    int[] ggg = fromJulian(DateDepartJulian + 240 + h);
+
+                    depart.year = fff[0];
+                    depart.month = fff[1];
+                    depart.day = fff[2];
+
+                    arrival.month = ggg[1];
+                    arrival.day = ggg[2];
+                    arrival.year = ggg[0];
+
+                    tmp = interplanet(depart, arrival);
+
+                    valorisationScalar = Double.MAX_VALUE;
+
+                    tmp_valorisationScalar = Math.sqrt((tmp.trajectory.V1.x - tmp.planet1.Vp.x) * (tmp.trajectory.V1.x - tmp.planet1.Vp.x) + (tmp.trajectory.V1.y - tmp.planet1.Vp.y) * (tmp.trajectory.V1.y - tmp.planet1.Vp.y) + (tmp.trajectory.V1.z - tmp.planet1.Vp.z) * (tmp.trajectory.V1.z - tmp.planet1.Vp.z));
+
+                    if(tmp_valorisationScalar < valorisationScalar){
+                        valorisationScalar = tmp_valorisationScalar;
+                        kk = k;
+                        hh = h;
+                    }
+                }
+            }
+
+            System.out.println("Good!!! " + String.format("%.2f", (double)valorisationScalar) + "km/s Year: " + fromJulian(DateDepartJulian + kk)[0] + " Month: " + fromJulian(DateDepartJulian + kk)[1] + " Day: " + fromJulian(DateDepartJulian + kk)[2] + " Duration: " + (240 + hh + kk));
         }
         else{
             System.out.println("Bad!!! " + valorisationScalar);
         }
+    }
+
+    private static int[] fromJulian(double injulian) {
+        int JGREG= 15 + 31*(10+12*1582);
+        double HALFSECOND = 0.5;
+
+        int jalpha,ja,jb,jc,jd,je,year,month,day;
+        double julian = injulian + HALFSECOND / 86400.0;
+        ja = (int) injulian;
+        if (ja>= JGREG) {
+            jalpha = (int) (((ja - 1867216) - 0.25) / 36524.25);
+            ja = ja + 1 + jalpha - jalpha / 4;
+        }
+
+        jb = ja + 1524;
+        jc = (int) (6680.0 + ((jb - 2439870) - 122.1) / 365.25);
+        jd = 365 * jc + jc / 4;
+        je = (int) ((jb - jd) / 30.6001);
+        day = jb - jd - (int) (30.6001 * je);
+        month = je - 1;
+        if (month > 12) month = month - 12;
+        year = jc - 4715;
+        if (month > 2) year--;
+        if (year <= 0) year--;
+
+        return new int[] {year, month, day};
     }
     public interplanetary_data Lambert()
     {
